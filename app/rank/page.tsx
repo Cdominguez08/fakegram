@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getTimeAgo } from "../utils/time";
 import { posts, type Post } from "../mocks/posts";
+import { supabase} from "../utils/client";
 
 function HeartIcon() {
   return (
@@ -60,15 +61,15 @@ function Modal({
         <div className="flex items-center gap-3 p-4 border-b border-border">
           <div className="relative w-10 h-10 rounded-full overflow-hidden ring-2 ring-primary">
             <Image
-              src={post.user.avatar}
-              alt={post.user.username}
+              src={post.user?.avatar || 'https://mzylvohrrdtqogzndiso.supabase.co/storage/v1/object/public/images/profiles/user_default.png'}
+              alt={post.user?.username || 'default_user'}
               fill
               className="object-cover"
             />
           </div>
           <div className="flex flex-col">
-            <span className="font-semibold text-foreground">{post.user.username}</span>
-            <span className="text-xs text-foreground/50">{getTimeAgo(post.created_at)}</span>
+            <span className="font-semibold text-foreground">{post.user?.username || 'default_user'}</span>
+            <span className="text-xs text-foreground/50">{getTimeAgo(new Date(post.created_at))}</span>
           </div>
         </div>
 
@@ -76,7 +77,7 @@ function Modal({
         <div className="relative w-full aspect-square">
           <Image
             src={post.image_url}
-            alt={`Post de ${post.user.username}`}
+            alt={`Post de ${post.user?.username || 'default_user'}`}
             fill
             className="object-cover"
           />
@@ -91,7 +92,7 @@ function Modal({
             </span>
           </div>
           <p className="mt-2 text-foreground">
-            <span className="font-semibold">{post.user.username}</span>{" "}
+            <span className="font-semibold">{post.user?.username || 'default_user'}</span>{" "}
             <span className="text-foreground/80">{post.caption}</span>
           </p>
         </div>
@@ -102,6 +103,26 @@ function Modal({
 
 export default function RankPage() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [posts, setPosts] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchPost = async () => {
+    
+            const { data, error } = await supabase.from('posts_new')
+              .select("id, image_url, caption, likes, created_at")
+              .gt("likes", 80)
+              .order("likes", { ascending : false})
+    
+            if(error) {
+              console.error("Error al obtener posts: ", error);
+            }else{
+              console.log("Post obtenidos: ", data);
+              setPosts(data);
+            }
+          }
+    
+          fetchPost();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
